@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LSA Search Engine</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1>LSA Search Engine</h1>
+    <div id="search-container">
+        <input type="text" id="query" placeholder="Enter your search query">
+        <button id="search-button" onclick="search()">Search</button>
+    </div>
+    <div id="results"></div>
+    <div id="chart"></div>
+
+    <script>
+        async function search() {
+            const query = document.getElementById('query').value;
+            const response = await fetch('/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ query })
+            });
+            const results = await response.json();
+            displayResults(results);
+            displayChart(results);
+        }
+
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2>Top 5 Results:</h2>';
+            results.forEach((result, index) => {
+                const headers = Object.entries(result.document.headers)
+                    .map(([key, value]) => `<strong>${key}:</strong> ${value}`)
+                    .join('<br>');
+                
+                resultsDiv.innerHTML += `
+                    <div class="result-item">
+                        <h3>Document ${index + 1}</h3>
+                        <div class="document-headers">${headers}</div>
+                        <div class="document-body">${result.document.body}</div>
+                        <p class="similarity-score">Similarity: ${result.similarity.toFixed(4)}</p>
+                    </div>
+                `;
+            });
+        }
+
+        function displayChart(results) {
+            const similarities = results.map(r => r.similarity);
+            const labels = results.map((_, i) => `Doc ${i + 1}`);
+
+            const data = [{
+                x: labels,
+                y: similarities,
+                type: 'bar'
+            }];
+
+            const layout = {
+                title: 'Document Similarities',
+                xaxis: { title: 'Documents' },
+                yaxis: { title: 'Cosine Similarity' }
+            };
+
+            Plotly.newPlot('chart', data, layout);
+        }
+    </script>
+</body>
+</html>
